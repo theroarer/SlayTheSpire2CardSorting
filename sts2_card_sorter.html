@@ -14,57 +14,53 @@
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 main{padding:16px 20px;min-height:100vh;}
 
-/* --- PULL TAB (always visible, outside wrapper) --- */
-#pull-tab {
-  position:sticky;
-  top:0;
-  z-index:25;
-  height:28px;
-  background:rgba(16,17,20,.95);
-  border-bottom:1px solid var(--border);
+/* --- FLOATING ACTION BUTTON --- */
+#fab {
+  position:fixed;
+  top:12px;
+  right:12px;
+  z-index:100;
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-size:20px;
+  cursor:pointer;
   display:flex;
   align-items:center;
   justify-content:center;
-  cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.6);
+  transition: all 0.2s ease;
   user-select:none;
   -webkit-tap-highlight-color:transparent;
-  transition: opacity 0.3s ease;
-  opacity:1;
 }
-#pull-tab.pinned {
-  opacity:0;
-  pointer-events:none;
+#fab:hover {
+  background:#30343b;
+  transform:scale(1.05);
 }
-#pull-tab .handle {
-  width:40px;
-  height:4px;
-  background:var(--muted);
-  border-radius:2px;
-  opacity:0.5;
-  transition: opacity 0.2s ease;
+#fab:active {
+  transform:scale(0.95);
 }
-#pull-tab:hover .handle {
-  opacity:0.8;
-}
-#pull-tab .tab-label {
-  position:absolute;
-  right:16px;
-  font-size:10px;
-  color:var(--muted);
-  text-transform:uppercase;
-  letter-spacing:0.5px;
-  opacity:0.5;
+#fab.pinned {
+  background:#2a3a4a;
+  border-color:#4a8aaa;
+  color:#8adaaa;
 }
 
 /* --- HEADER WRAPPER --- */
 #header-wrapper {
-  position:sticky;
+  position:fixed;
   top:0;
-  z-index:20;
+  left:0;
+  right:0;
+  z-index:50;
   overflow:hidden;
   transition: height 0.3s ease, opacity 0.3s ease;
   height: auto;
   opacity:1;
+  pointer-events:auto;
 }
 #header-wrapper.hidden {
   height: 0 !important;
@@ -83,6 +79,7 @@ header{
   background:rgba(16,17,20,.97);
   border-bottom:1px solid var(--border);
   padding:12px 20px;
+  padding-right:64px;
   transition: transform 0.3s ease;
   transform: translateY(0);
 }
@@ -182,13 +179,7 @@ h1{margin:0;font-size:22px;font-weight:700}
   accent-color:#858b95;
   cursor:pointer;
 }
-.control-wrapper .slider-value{
-  font-size:10px;
-  color:var(--muted);
-  text-align:center;
-  margin-top:1px;
-}
-/* Pin toggle */
+/* Pin toggle inside header */
 .control-wrapper.pin-wrapper .pin-toggle{
   font-size:16px;
   line-height:1;
@@ -359,7 +350,7 @@ h1{margin:0;font-size:22px;font-weight:700}
 }
 
 @media(max-width:650px){
-  header{padding:10px 14px}
+  header{padding:10px 14px;padding-right:60px;}
   h1{font-size:18px}
   .controls{gap:5px}
   .controls>*{width:100%}
@@ -382,19 +373,20 @@ h1{margin:0;font-size:22px;font-weight:700}
   .card-meta{font-size:7px}
   .card-actions button{font-size:7px;padding:2px 4px}
   .lightbox{padding:20px}
-  #pull-tab .tab-label {
-    display:none;
+  #fab {
+    top:10px;
+    right:10px;
+    width:40px;
+    height:40px;
+    font-size:18px;
   }
 }
 </style>
 </head>
 <body>
 
-<!-- PULL TAB (always visible) -->
-<div id="pull-tab" title="Tap to show/hide controls">
-  <div class="handle"></div>
-  <span class="tab-label">Controls</span>
-</div>
+<!-- FLOATING ACTION BUTTON -->
+<div id="fab" title="Toggle controls" role="button" tabindex="0">✕</div>
 
 <!-- HEADER WRAPPER -->
 <div id="header-wrapper">
@@ -446,7 +438,6 @@ h1{margin:0;font-size:22px;font-weight:700}
       <div class="control-wrapper">
         <span class="control-label">Card Size</span>
         <input type="range" id="card-size-slider" min="70" max="250" value="165" step="5">
-        <div class="slider-value" id="slider-value">165</div>
       </div>
 
       <!-- Pin Toggle -->
@@ -805,12 +796,13 @@ function render() {
 function updateCardSize(value) {
   const size = parseInt(value);
   document.documentElement.style.setProperty('--card-min-size', size + 'px');
-  document.getElementById('slider-value').textContent = size;
   localStorage.setItem('cardSize', size);
 }
 
 function setHeaderVisibility(visible) {
   const wrapper = document.getElementById('header-wrapper');
+  const fab = document.getElementById('fab');
+  
   if (isPinned) return;
   
   isHeaderVisible = visible;
@@ -818,13 +810,17 @@ function setHeaderVisibility(visible) {
   if (visible) {
     wrapper.classList.remove('hidden');
     wrapper.style.height = 'auto';
+    fab.textContent = '✕';
+    fab.title = 'Close controls';
   } else {
     wrapper.classList.add('hidden');
     wrapper.style.height = '0px';
+    fab.textContent = '☰';
+    fab.title = 'Open controls';
   }
 }
 
-// Toggle header visibility via pull tab
+// Toggle header visibility via FAB
 function toggleHeaderVisibility() {
   if (isPinned) return;
   setHeaderVisibility(!isHeaderVisible);
@@ -834,7 +830,7 @@ function toggleHeaderVisibility() {
 function togglePin() {
   const wrapper = document.getElementById('header-wrapper');
   const pinToggle = document.getElementById('pin-toggle');
-  const pullTab = document.getElementById('pull-tab');
+  const fab = document.getElementById('fab');
   
   isPinned = !isPinned;
   
@@ -842,24 +838,23 @@ function togglePin() {
     wrapper.classList.add('pinned');
     wrapper.classList.remove('hidden');
     wrapper.style.height = 'auto';
-    pullTab.classList.add('pinned');
+    fab.classList.add('pinned');
     pinToggle.classList.add('active');
     pinToggle.textContent = '⤓';
     pinToggle.title = 'Unpin header';
+    fab.textContent = '✕';
+    fab.title = 'Close controls (pinned)';
     isHeaderVisible = true;
   } else {
     wrapper.classList.remove('pinned');
-    pullTab.classList.remove('pinned');
+    fab.classList.remove('pinned');
     pinToggle.classList.remove('active');
     pinToggle.textContent = '⤒';
     pinToggle.title = 'Pin header';
-    if (!isHeaderVisible) {
-      wrapper.classList.add('hidden');
-      wrapper.style.height = '0px';
-    } else {
-      wrapper.classList.remove('hidden');
-      wrapper.style.height = 'auto';
-    }
+    
+    // DO NOT auto-close - just re-enable scroll behavior
+    // Keep the header in its current state (open or closed)
+    // The scroll handler will take over from here
   }
   localStorage.setItem('headerPinned', isPinned);
 }
@@ -902,28 +897,51 @@ async function loadCards(){
   
   document.getElementById('card-size-slider').value = sizeToUse;
   document.documentElement.style.setProperty('--card-min-size', sizeToUse + 'px');
-  document.getElementById('slider-value').textContent = sizeToUse;
   
   const savedPin = localStorage.getItem('headerPinned');
   if (savedPin === 'true') {
     isPinned = true;
     const wrapper = document.getElementById('header-wrapper');
-    const pullTab = document.getElementById('pull-tab');
     const pinToggle = document.getElementById('pin-toggle');
+    const fab = document.getElementById('fab');
     wrapper.classList.add('pinned');
     wrapper.classList.remove('hidden');
     wrapper.style.height = 'auto';
-    pullTab.classList.add('pinned');
+    fab.classList.add('pinned');
+    fab.textContent = '✕';
+    fab.title = 'Close controls (pinned)';
     pinToggle.classList.add('active');
     pinToggle.textContent = '⤓';
     pinToggle.title = 'Unpin header';
     isHeaderVisible = true;
   } else {
+    // Default: header OPEN, FAB shows ✕
     isHeaderVisible = true;
     document.getElementById('header-wrapper').classList.remove('hidden');
     document.getElementById('header-wrapper').style.height = 'auto';
-    document.getElementById('pull-tab').classList.remove('pinned');
+    document.getElementById('fab').textContent = '✕';
+    document.getElementById('fab').title = 'Close controls';
   }
+  
+  // Force header open after Firefox session restore, with a longer delay
+  // and reset the scroll handler so it doesn't immediately hide the header
+  window.addEventListener('pageshow', function() {
+    setTimeout(function() {
+      if (!isPinned) {
+        const wrapper = document.getElementById('header-wrapper');
+        const fab = document.getElementById('fab');
+        wrapper.classList.remove('hidden');
+        wrapper.style.height = 'auto';
+        wrapper.style.opacity = '1';
+        fab.textContent = '✕';
+        fab.title = 'Close controls';
+        isHeaderVisible = true;
+        
+        // Reset lastScrollY to current position so scroll handler doesn't trigger immediately
+        lastScrollY = window.scrollY;
+      }
+    }, 150);
+  });
   
   try{
     const [cardsResponse, enchResponse] = await Promise.all([
@@ -980,8 +998,17 @@ document.getElementById('card-size-slider').addEventListener('input', (e) => {
   updateCardSize(e.target.value);
 });
 
-document.getElementById('pull-tab').addEventListener('click', toggleHeaderVisibility);
+// FAB event listeners
+const fab = document.getElementById('fab');
+fab.addEventListener('click', toggleHeaderVisibility);
+fab.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    toggleHeaderVisibility();
+  }
+});
 
+// Pin toggle event listeners
 const pinToggle = document.getElementById('pin-toggle');
 pinToggle.addEventListener('click', togglePin);
 pinToggle.addEventListener('keydown', (e) => {
