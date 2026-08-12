@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STS2 Card Sorter</title>
+<style>
+:root{
+  --bg:#101114;--panel:#191b20;--panel2:#22252b;--border:#383c45;
+  --text:#f4f4f5;--muted:#a9adb6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+header{
+  position:sticky;top:0;z-index:20;background:rgba(16,17,20,.97);
+  border-bottom:1px solid var(--border);padding:18px 24px
+}
+h1{margin:0;font-size:28px}
+.sub{color:var(--muted);margin-top:3px;font-size:14px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:end}
+label{font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted)}
+label span{display:block;margin-bottom:5px}
+select,input,button{
+  background:var(--panel2);color:var(--text);border:1px solid var(--border);
+  border-radius:8px;padding:10px 12px;font:inherit
+}
+select{min-width:245px}
+input{min-width:260px}
+button{cursor:pointer}
+button:hover{background:#30343b}
+.filter-group{display:flex;flex-direction:column;gap:5px}
+.filter-title{font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted)}
+.toggles{display:flex;flex-wrap:wrap;gap:5px}
+.color-toggle{padding:8px 10px;font-size:13px}
+.color-toggle.active{background:#555b65;border-color:#858b95;color:#fff}
+.color-toggle:not(.active){opacity:.38;text-decoration:line-through}
+#status{margin-top:12px;color:var(--muted);font-size:14px}
+main{padding:24px}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(165px,1fr));
+  gap:16px;
+  max-width:1900px;
+  margin:0 auto;
+}
+.card{
+  background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:7px;box-shadow:0 5px 16px #0008;
+  position:relative;
+}
+.card-image-container{
+  position:relative;
+  width:100%;
+  border-radius:9px;
+  overflow:hidden;
+  background:#08090a;
+  min-height:100px;
+}
+.card-image{
+  display:block;
+  width:100%;
+  height:auto;
+  border-radius:9px;
+  cursor:zoom-in;
+  background:#08090a;
+  transition: opacity 0.3s ease;
+}
+.card-image.loading{
+  opacity:0.3;
+}
+.card-image.loaded{
+  opacity:1;
+}
+.card-name{
+  font-size:12px;font-weight:800;margin:6px 1px 2px
+}
+.card-meta{color:var(--muted);font-size:9px}
+.card-actions{
+  display:flex;
+  gap:5px;
+  margin-top:5px;
+  flex-wrap:wrap;
+}
+.card-actions button{
+  padding:4px 8px;
+  font-size:10px;
+  border-radius:4px;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  color:var(--muted);
+  cursor:pointer;
+  transition: all 0.2s ease;
+}
+.card-actions button:hover{
+  background:#30343b;
+  color:var(--text);
+}
+.card-actions button.active-upgrade{
+  background:#2a4a3a;
+  border-color:#4a8a6a;
+  color:#8adaaa;
+}
+.card-actions button.active-enchant{
+  background:#3a2a4a;
+  border-color:#8a6ada;
+  color:#daaada;
+}
+.card-actions button:disabled{
+  opacity:0.3;
+  cursor:not-allowed;
+}
+.error{
+  max-width:850px;margin:50px auto;padding:20px;border:1px solid #70343b;
+  background:#321d20;border-radius:12px
+}
+/* Lightbox overlay */
+.lightbox{
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.92);
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px;
+  cursor:pointer;
+  animation:fadeIn .2s ease;
+}
+.lightbox img{
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  border-radius:12px;
+  box-shadow:0 10px 60px #000;
+}
+.lightbox-close{
+  position:fixed;
+  top:20px;right:30px;
+  font-size:40px;
+  color:var(--text);
+  cursor:pointer;
+  background:none;
+  border:none;
+  padding:10px;
+  opacity:.7;
+  transition:opacity .2s;
+}
+.lightbox-close:hover{opacity:1}
+@keyframes fadeIn{
+  from{opacity:0}
+  to{opacity:1}
+}
+@media(max-width:650px){
+  header{padding:15px}.controls>*{width:100%}select,input{min-width:0;width:100%}.filter-group{width:100%}
+  main{padding:14px}.grid{grid-template-columns:1fr}
+  .lightbox{padding:20px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Slay the Spire 2 — Card Sorter</h1>
+  <div class="sub">Card images are the actual full game-rendered cards from Spire Codex.</div>
+
+  <div class="controls">
+    <div class="filter-group">
+      <div class="filter-title">Colors</div>
+      <div id="color-toggles" class="toggles">
+        <button class="color-toggle active" data-color="ironclad">Ironclad</button>
+        <button class="color-toggle active" data-color="silent">Silent</button>
+        <button class="color-toggle active" data-color="defect">Defect</button>
+        <button class="color-toggle active" data-color="necrobinder">Necrobinder</button>
+        <button class="color-toggle active" data-color="regent">Regent</button>
+        <button class="color-toggle active" data-color="colorless">Colorless</button>
+      </div>
+    </div>
+
+    <label><span>Sort</span>
+      <select id="sort">
+        <option value="rarity-asc">Rarity: Common → Uncommon → Rare, then Cost ↑</option>
+        <option value="rarity-desc">Rarity: Rare → Uncommon → Common, then Cost ↑</option>
+        <option value="cost-asc">Cost: Low → High</option>
+        <option value="cost-desc">Cost: High → Low</option>
+      </select>
+    </label>
+
+    <label><span>Search</span>
+      <input id="search" type="search" placeholder="Card name or text…">
+    </label>
+
+    <button id="reset">Reset</button>
+  </div>
+
+  <div id="status">Loading cards…</div>
+</header>
+
+<main><div id="grid" class="grid"></div></main>
+
+<script>
+const API = "https://spire-codex.com/api/cards?lang=eng";
+const ENCHANTMENTS_API = "https://spire-codex.com/api/enchantments?lang=eng";
+const rarityRank = {Basic:0, Starter:0, Common:1, Uncommon:2, Rare:3};
+
+let cards = [];
+let enchantments = [];
+let cardStates = {};
+const imageCache = new Map();
+let currentVisibleCards = [];
+let isRendering = false;
+
+function esc(value){
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+
+function costNumber(card){
+  if (card.cost === undefined || card.cost === null) return 999;
+  if (card.cost === "X" || card.cost === "x") return 999;
+  const n = Number(card.cost);
+  return Number.isFinite(n) ? n : 999;
+}
+
+function openLightbox(imageUrl, cardName){
+  const existing = document.querySelector('.lightbox');
+  if(existing) existing.remove();
+  
+  const lightbox = document.createElement('div');
+  lightbox.className = 'lightbox';
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'lightbox-close';
+  closeBtn.innerHTML = '×';
+  closeBtn.setAttribute('aria-label', 'Close');
+  
+  const img = document.createElement('img');
+  img.src = imageUrl;
+  img.alt = esc(cardName);
+  img.loading = 'lazy';
+  
+  lightbox.appendChild(closeBtn);
+  lightbox.appendChild(img);
+  document.body.appendChild(lightbox);
+  
+  lightbox.addEventListener('click', (e) => {
+    if(e.target === lightbox || e.target === closeBtn || e.target === img) {
+      lightbox.remove();
+    }
+  });
+  
+  const closeHandler = (e) => {
+    if(e.key === 'Escape') {
+      lightbox.remove();
+      document.removeEventListener('keydown', closeHandler);
+    }
+  };
+  document.addEventListener('keydown', closeHandler);
+}
+
+function preloadImage(url) {
+  return new Promise((resolve, reject) => {
+    if (imageCache.has(url)) {
+      resolve(imageCache.get(url));
+      return;
+    }
+    
+    const img = new Image();
+    img.onload = () => {
+      imageCache.set(url, img);
+      resolve(img);
+    };
+    img.onerror = () => {
+      reject(new Error(`Failed to load image: ${url}`));
+    };
+    img.src = url;
+  });
+}
+
+async function toggleUpgrade(cardId){
+  if (!cardStates[cardId]) cardStates[cardId] = { upgraded: false, enchantment: null };
+  
+  const newUpgraded = !cardStates[cardId].upgraded;
+  const card = cards.find(c => c.id === cardId);
+  if (!card) return;
+  
+  const tempState = { ...cardStates[cardId], upgraded: newUpgraded };
+  const newImageUrl = getCardImage(card, tempState);
+  
+  if (newImageUrl) {
+    try {
+      await preloadImage(newImageUrl);
+      cardStates[cardId].upgraded = newUpgraded;
+      updateCard(cardId);
+    } catch (error) {
+      console.warn('Failed to preload upgrade image:', error);
+      cardStates[cardId].upgraded = newUpgraded;
+      updateCard(cardId);
+    }
+  } else {
+    cardStates[cardId].upgraded = newUpgraded;
+    updateCard(cardId);
+  }
+}
+
+async function toggleEnchantment(cardId, enchantmentId){
+  if (!cardStates[cardId]) cardStates[cardId] = { upgraded: false, enchantment: null };
+  
+  const card = cards.find(c => c.id === cardId);
+  if (!card) return;
+  
+  const currentEnchantment = cardStates[cardId].enchantment;
+  const newEnchantment = (currentEnchantment === enchantmentId) ? null : enchantmentId;
+  
+  const tempState = { ...cardStates[cardId], enchantment: newEnchantment };
+  const newImageUrl = getCardImage(card, tempState);
+  
+  if (newImageUrl && newEnchantment !== null) {
+    try {
+      await preloadImage(newImageUrl);
+      cardStates[cardId].enchantment = newEnchantment;
+      updateCard(cardId);
+    } catch (error) {
+      console.warn('Failed to preload enchantment image:', error);
+      cardStates[cardId].enchantment = newEnchantment;
+      updateCard(cardId);
+    }
+  } else {
+    cardStates[cardId].enchantment = newEnchantment;
+    updateCard(cardId);
+  }
+}
+
+function getCardImage(card, state){
+  const isUpgraded = state?.upgraded || false;
+  const enchantment = state?.enchantment || null;
+  
+  if (enchantment) {
+    const cardId = card.id.toLowerCase();
+    const enchId = enchantment.toLowerCase();
+    
+    if (isUpgraded) {
+      return `https://cdn.spire-codex.com/cards-full/stable/ench/${enchId}/${cardId}_upg.webp`;
+    } else {
+      return `https://cdn.spire-codex.com/cards-full/stable/ench/${enchId}/${cardId}.webp`;
+    }
+  }
+  
+  if (isUpgraded) {
+    return card.image_url_card_upg || card.image_url_card || card.image_url || "";
+  } else {
+    return card.image_url_card || card.image_url || "";
+  }
+}
+
+function getFilteredCards() {
+  const search = document.getElementById("search").value.trim().toLowerCase();
+  const activeColors = new Set(
+    [...document.querySelectorAll(".color-toggle.active")]
+      .map(button => button.dataset.color)
+  );
+
+  return cards.filter(card => {
+    if(activeColors.size === 0) return false;
+    if(!activeColors.has(String(card.color).toLowerCase())) return false;
+
+    if(search){
+      const haystack = [
+        card.name, card.description, card.type, card.rarity, card.color, card.id
+      ].join(" ").toLowerCase();
+      if(!haystack.includes(search)) return false;
+    }
+
+    return true;
+  });
+}
+
+function sortCards(visible) {
+  const sort = document.getElementById("sort").value;
+  
+  return visible.sort((a,b) => {
+    const costA = costNumber(a);
+    const costB = costNumber(b);
+    
+    if(sort.startsWith("rarity")){
+      const rankA = rarityRank[a.rarity] ?? 99;
+      const rankB = rarityRank[b.rarity] ?? 99;
+      
+      if(rankA !== rankB) {
+        return sort.endsWith("asc") ? rankA - rankB : rankB - rankA;
+      }
+      
+      if(costA !== costB) {
+        return costA - costB;
+      }
+      
+      return String(a.name).localeCompare(String(b.name));
+    } else {
+      if(costA !== costB) {
+        return sort.endsWith("asc") ? costA - costB : costB - costA;
+      }
+      return String(a.name).localeCompare(String(b.name));
+    }
+  });
+}
+
+function createCardElement(card) {
+  const state = cardStates[card.id] || { upgraded: false, enchantment: null };
+  const isUpgraded = state.upgraded || false;
+  const activeEnchantment = state.enchantment || null;
+  
+  const image = getCardImage(card, state);
+  const hasUpgrade = !!card.image_url_card_upg;
+  
+  const cardEnchantments = enchantments.filter(ench => 
+    ench.applicable_to && ench.applicable_to.includes(card.type?.toLowerCase())
+  );
+  
+  const isImageCached = image ? imageCache.has(image) : false;
+  
+  const article = document.createElement('article');
+  article.className = 'card';
+  article.dataset.cardId = card.id;
+  
+  // Image container
+  const container = document.createElement('div');
+  container.className = 'card-image-container';
+  
+  if (image) {
+    const img = document.createElement('img');
+    img.className = `card-image ${isImageCached ? 'loaded' : 'loading'}`;
+    img.src = image;
+    img.alt = `${card.name}${isUpgraded ? ' (Upgraded)' : ''}${activeEnchantment ? ' enchanted with ' + activeEnchantment : ''}`;
+    img.loading = 'lazy';
+    img.onclick = () => openLightbox(image, `${card.name}${isUpgraded ? ' (Upgraded)' : ''}${activeEnchantment ? ' with ' + activeEnchantment : ''}`);
+    img.onload = () => {
+      img.classList.remove('loading');
+      img.classList.add('loaded');
+    };
+    img.onerror = () => {
+      img.style.display = 'none';
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error';
+      errorDiv.style.padding = '20px';
+      errorDiv.style.textAlign = 'center';
+      errorDiv.style.fontSize = '12px';
+      errorDiv.textContent = 'Failed to load image';
+      container.appendChild(errorDiv);
+    };
+    container.appendChild(img);
+  } else {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error';
+    errorDiv.style.padding = '20px';
+    errorDiv.style.textAlign = 'center';
+    errorDiv.style.fontSize = '12px';
+    errorDiv.textContent = 'No image available';
+    container.appendChild(errorDiv);
+  }
+  
+  article.appendChild(container);
+  
+  // Name
+  const name = document.createElement('div');
+  name.className = 'card-name';
+  name.textContent = `${card.name}${isUpgraded ? ' ✦' : ''}${activeEnchantment ? ' ✦✦' : ''}`;
+  article.appendChild(name);
+  
+  // Meta
+  const meta = document.createElement('div');
+  meta.className = 'card-meta';
+  meta.textContent = `${card.color} · ${card.rarity} · ${card.type} · Cost ${card.cost}`;
+  article.appendChild(meta);
+  
+  // Actions
+  const actions = document.createElement('div');
+  actions.className = 'card-actions';
+  
+  // Upgrade button
+  if (hasUpgrade) {
+    const upgradeBtn = document.createElement('button');
+    upgradeBtn.className = isUpgraded ? 'active-upgrade' : '';
+    upgradeBtn.textContent = isUpgraded ? '▼ Upgraded' : '▲ Upgrade';
+    upgradeBtn.onclick = () => toggleUpgrade(card.id);
+    actions.appendChild(upgradeBtn);
+  } else {
+    const disabledBtn = document.createElement('button');
+    disabledBtn.disabled = true;
+    disabledBtn.textContent = 'No Upgrade';
+    actions.appendChild(disabledBtn);
+  }
+  
+  // Enchantment buttons
+  cardEnchantments.forEach(ench => {
+    const enchBtn = document.createElement('button');
+    enchBtn.className = activeEnchantment === ench.id ? 'active-enchant' : '';
+    enchBtn.textContent = `${activeEnchantment === ench.id ? '▼' : '✦'} ${ench.name || ench.id}`;
+    enchBtn.onclick = () => toggleEnchantment(card.id, ench.id);
+    actions.appendChild(enchBtn);
+  });
+  
+  article.appendChild(actions);
+  
+  return article;
+}
+
+function updateCard(cardId) {
+  const card = cards.find(c => c.id === cardId);
+  if (!card) return;
+  
+  const grid = document.getElementById('grid');
+  const existingCard = grid.querySelector(`[data-card-id="${cardId}"]`);
+  
+  if (existingCard) {
+    const newCard = createCardElement(card);
+    existingCard.replaceWith(newCard);
+  }
+}
+
+function render() {
+  if (isRendering) return;
+  isRendering = true;
+  
+  const visible = getFilteredCards();
+  const sorted = sortCards(visible);
+  currentVisibleCards = sorted;
+  
+  const grid = document.getElementById('grid');
+  const status = document.getElementById('status');
+  
+  status.textContent = `${sorted.length} card${sorted.length === 1 ? '' : 's'} shown · ${cards.length} loaded`;
+  
+  // Only rebuild if the grid is empty or we need to do a full rebuild
+  if (grid.children.length === 0) {
+    // Full initial render
+    sorted.forEach(card => {
+      grid.appendChild(createCardElement(card));
+    });
+  } else {
+    // Smart update: check what changed
+    const currentCardIds = new Set();
+    grid.querySelectorAll('.card').forEach(el => {
+      currentCardIds.add(el.dataset.cardId);
+    });
+    
+    const newCardIds = new Set(sorted.map(c => c.id));
+    
+    // Remove cards that are no longer visible
+    for (const el of grid.querySelectorAll('.card')) {
+      if (!newCardIds.has(el.dataset.cardId)) {
+        el.remove();
+      }
+    }
+    
+    // Add new cards or reorder
+    let insertBefore = null;
+    sorted.forEach((card, index) => {
+      const existingEl = grid.querySelector(`[data-card-id="${card.id}"]`);
+      const targetPosition = grid.children[index];
+      
+      if (!existingEl) {
+        // New card - create it
+        const newCard = createCardElement(card);
+        if (targetPosition) {
+          grid.insertBefore(newCard, targetPosition);
+        } else {
+          grid.appendChild(newCard);
+        }
+      } else if (existingEl !== targetPosition) {
+        // Card exists but in wrong position - move it
+        if (targetPosition) {
+          grid.insertBefore(existingEl, targetPosition);
+        } else {
+          grid.appendChild(existingEl);
+        }
+      }
+    });
+  }
+  
+  isRendering = false;
+}
+
+async function loadCards(){
+  try{
+    const [cardsResponse, enchResponse] = await Promise.all([
+      fetch(API),
+      fetch(ENCHANTMENTS_API)
+    ]);
+
+    if(!cardsResponse.ok){
+      throw new Error(`Spire Codex returned HTTP ${cardsResponse.status}`);
+    }
+
+    const cardsData = await cardsResponse.json();
+    cards = Array.isArray(cardsData) ? cardsData : (cardsData.cards || cardsData.results || []);
+    
+    if(enchResponse.ok){
+      const enchData = await enchResponse.json();
+      enchantments = Array.isArray(enchData) ? enchData : (enchData.enchantments || enchData.results || []);
+    }
+
+    render();
+  }catch(error){
+    document.getElementById("status").textContent = "Failed to load cards.";
+    document.getElementById("grid").innerHTML = `
+      <div class="error">
+        <strong>Could not load the Spire Codex card database.</strong>
+        <p>${esc(error.message)}</p>
+        <p>
+          If your browser blocks requests from a local HTML file,
+          run this file through a simple local web server instead.
+        </p>
+      </div>`;
+  }
+}
+
+// Event listeners
+document.querySelectorAll(".color-toggle").forEach(button => {
+  button.addEventListener("click", () => {
+    button.classList.toggle("active");
+    render();
+  });
+});
+
+document.getElementById("sort").addEventListener("change", render);
+document.getElementById("search").addEventListener("input", render);
+
+document.getElementById("reset").addEventListener("click", () => {
+  document.querySelectorAll(".color-toggle").forEach(button => {
+    button.classList.add("active");
+  });
+  document.getElementById("sort").value = "rarity-asc";
+  document.getElementById("search").value = "";
+  cardStates = {};
+  imageCache.clear();
+  render();
+});
+
+loadCards();
+</script>
+</body>
+</html>
