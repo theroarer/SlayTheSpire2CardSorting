@@ -8,13 +8,13 @@
 :root{
   --bg:#101114;--panel:#191b20;--panel2:#22252b;--border:#383c45;
   --text:#f4f4f5;--muted:#a9adb6;
-  --card-min-size: 120px;
+  --card-min-size: 165px;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 main{padding:16px 20px;min-height:100vh;}
 
-/* --- PULL TAB --- */
+/* --- PULL TAB (always visible, outside wrapper) --- */
 #pull-tab {
   position:sticky;
   top:0;
@@ -26,14 +26,12 @@ main{padding:16px 20px;min-height:100vh;}
   align-items:center;
   justify-content:center;
   cursor:pointer;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  transform: translateY(0);
-  opacity:1;
   user-select:none;
   -webkit-tap-highlight-color:transparent;
+  transition: opacity 0.3s ease;
+  opacity:1;
 }
-#pull-tab.hidden {
-  transform: translateY(-100%);
+#pull-tab.pinned {
   opacity:0;
   pointer-events:none;
 }
@@ -58,30 +56,41 @@ main{padding:16px 20px;min-height:100vh;}
   opacity:0.5;
 }
 
+/* --- HEADER WRAPPER --- */
+#header-wrapper {
+  position:sticky;
+  top:0;
+  z-index:20;
+  overflow:hidden;
+  transition: height 0.3s ease, opacity 0.3s ease;
+  height: auto;
+  opacity:1;
+}
+#header-wrapper.hidden {
+  height: 0 !important;
+  opacity:0;
+  pointer-events: none;
+}
+#header-wrapper.pinned {
+  height: auto !important;
+  opacity:1 !important;
+  pointer-events: auto !important;
+}
+
 /* --- HEADER --- */
 header{
-  position:sticky;
-  top:-1px;
-  z-index:20;
+  width:100%;
   background:rgba(16,17,20,.97);
   border-bottom:1px solid var(--border);
   padding:12px 20px;
-  transition: transform 0.3s ease, opacity 0.3s ease, margin-bottom 0.3s ease;
+  transition: transform 0.3s ease;
   transform: translateY(0);
-  opacity:1;
-  margin-bottom:0;
 }
-header.hidden {
+#header-wrapper.hidden header {
   transform: translateY(-100%);
-  opacity:0;
-  pointer-events:none;
-  margin-bottom:-100px;
 }
-header.pinned {
+#header-wrapper.pinned header {
   transform: translateY(0) !important;
-  opacity:1 !important;
-  pointer-events:auto !important;
-  margin-bottom:0 !important;
 }
 
 .header-top{
@@ -381,72 +390,75 @@ h1{margin:0;font-size:22px;font-weight:700}
 </head>
 <body>
 
-<!-- PULL TAB -->
+<!-- PULL TAB (always visible) -->
 <div id="pull-tab" title="Tap to show/hide controls">
   <div class="handle"></div>
   <span class="tab-label">Controls</span>
 </div>
 
-<header id="main-header">
-  <div class="header-top">
-    <h1>STS2 Card Sorter</h1>
-  </div>
+<!-- HEADER WRAPPER -->
+<div id="header-wrapper">
+  <header id="main-header">
+    <div class="header-top">
+      <h1>STS2 Card Sorter</h1>
+    </div>
 
-  <div class="controls">
-    <!-- Characters -->
-    <div class="control-wrapper">
-      <span class="control-label">Characters</span>
-      <div id="color-toggles" class="toggles">
-        <button class="color-toggle active" data-color="ironclad">Ironclad</button>
-        <button class="color-toggle active" data-color="silent">Silent</button>
-        <button class="color-toggle active" data-color="defect">Defect</button>
-        <button class="color-toggle active" data-color="necrobinder">Necrobinder</button>
-        <button class="color-toggle active" data-color="regent">Regent</button>
-        <button class="color-toggle active" data-color="colorless">Colorless</button>
+    <div class="controls">
+      <!-- Characters -->
+      <div class="control-wrapper">
+        <span class="control-label">Characters</span>
+        <div id="color-toggles" class="toggles">
+          <button class="color-toggle active" data-color="ironclad">Ironclad</button>
+          <button class="color-toggle active" data-color="silent">Silent</button>
+          <button class="color-toggle active" data-color="defect">Defect</button>
+          <button class="color-toggle active" data-color="necrobinder">Necrobinder</button>
+          <button class="color-toggle active" data-color="regent">Regent</button>
+          <button class="color-toggle active" data-color="colorless">Colorless</button>
+        </div>
+      </div>
+
+      <!-- Sort -->
+      <div class="control-wrapper">
+        <span class="control-label">Sort</span>
+        <select id="sort">
+          <option value="rarity-asc">Rarity ↑</option>
+          <option value="rarity-desc">Rarity ↓</option>
+          <option value="cost-asc">Cost ↑</option>
+          <option value="cost-desc">Cost ↓</option>
+          <option value="name-asc">Name ↑</option>
+          <option value="name-desc">Name ↓</option>
+        </select>
+      </div>
+
+      <!-- Search -->
+      <div class="control-wrapper">
+        <span class="control-label">Search</span>
+        <input id="search" type="search" placeholder="Card name or text…">
+      </div>
+
+      <!-- Reset -->
+      <div class="control-wrapper reset-wrapper">
+        <span class="label-placeholder">Placeholder</span>
+        <button id="reset">Reset</button>
+      </div>
+
+      <!-- Card Size -->
+      <div class="control-wrapper">
+        <span class="control-label">Card Size</span>
+        <input type="range" id="card-size-slider" min="70" max="250" value="165" step="5">
+        <div class="slider-value" id="slider-value">165</div>
+      </div>
+
+      <!-- Pin Toggle -->
+      <div class="control-wrapper pin-wrapper">
+        <span class="label-placeholder">Placeholder</span>
+        <div role="button" tabindex="0" id="pin-toggle" class="pin-toggle" title="Pin header (always visible)">⤒</div>
       </div>
     </div>
 
-    <!-- Sort -->
-    <div class="control-wrapper">
-      <span class="control-label">Sort</span>
-      <select id="sort">
-        <option value="rarity-asc">Rarity ↑</option>
-        <option value="rarity-desc">Rarity ↓</option>
-        <option value="cost-asc">Cost ↑</option>
-        <option value="cost-desc">Cost ↓</option>
-        <option value="name-asc">Name ↑</option>
-        <option value="name-desc">Name ↓</option>
-      </select>
-    </div>
-
-    <!-- Search -->
-    <div class="control-wrapper">
-      <span class="control-label">Search</span>
-      <input id="search" type="search" placeholder="Card name or text…">
-    </div>
-
-    <!-- Reset -->
-    <div class="control-wrapper reset-wrapper">
-      <span class="label-placeholder">Placeholder</span>
-      <button id="reset">Reset</button>
-    </div>
-
-    <!-- Card Size -->
-    <div class="control-wrapper">
-      <span class="control-label">Card Size</span>
-      <input type="range" id="card-size-slider" min="70" max="250" value="120" step="5">
-      <div class="slider-value" id="slider-value">120</div>
-    </div>
-
-    <!-- Pin Toggle -->
-    <div class="control-wrapper pin-wrapper">
-      <span class="label-placeholder">Placeholder</span>
-      <div role="button" tabindex="0" id="pin-toggle" class="pin-toggle" title="Pin header (always visible)">⤒</div>
-    </div>
-  </div>
-
-  <div id="status">Loading cards…</div>
-</header>
+    <div id="status">Loading cards…</div>
+  </header>
+</div>
 
 <main><div id="grid" class="grid"></div></main>
 
@@ -464,7 +476,6 @@ let isRendering = false;
 let isPinned = false;
 let isHeaderVisible = true;
 let lastScrollY = 0;
-let isUserInteracting = false;
 
 function esc(value){
   return String(value ?? "").replace(/[&<>"']/g, c => ({
@@ -799,56 +810,55 @@ function updateCardSize(value) {
 }
 
 function setHeaderVisibility(visible) {
-  const header = document.getElementById('main-header');
-  const pullTab = document.getElementById('pull-tab');
-  
-  if (isPinned) return; // Don't change if pinned
+  const wrapper = document.getElementById('header-wrapper');
+  if (isPinned) return;
   
   isHeaderVisible = visible;
   
   if (visible) {
-    header.classList.remove('hidden');
-    // Show pull tab but make it subtle (not hidden)
-    pullTab.classList.remove('hidden');
+    wrapper.classList.remove('hidden');
+    wrapper.style.height = 'auto';
   } else {
-    header.classList.add('hidden');
-    pullTab.classList.remove('hidden');
+    wrapper.classList.add('hidden');
+    wrapper.style.height = '0px';
   }
 }
 
 // Toggle header visibility via pull tab
 function toggleHeaderVisibility() {
-  if (isPinned) return; // Don't toggle if pinned
+  if (isPinned) return;
   setHeaderVisibility(!isHeaderVisible);
 }
 
 // Toggle pin
 function togglePin() {
-  const header = document.getElementById('main-header');
+  const wrapper = document.getElementById('header-wrapper');
   const pinToggle = document.getElementById('pin-toggle');
   const pullTab = document.getElementById('pull-tab');
   
   isPinned = !isPinned;
   
   if (isPinned) {
-    header.classList.add('pinned');
-    header.classList.remove('hidden');
+    wrapper.classList.add('pinned');
+    wrapper.classList.remove('hidden');
+    wrapper.style.height = 'auto';
+    pullTab.classList.add('pinned');
     pinToggle.classList.add('active');
     pinToggle.textContent = '⤓';
-    pinToggle.title = 'Unpin header (auto-hide on scroll)';
-    // Hide pull tab when pinned
-    pullTab.classList.add('hidden');
+    pinToggle.title = 'Unpin header';
     isHeaderVisible = true;
   } else {
-    header.classList.remove('pinned');
+    wrapper.classList.remove('pinned');
+    pullTab.classList.remove('pinned');
     pinToggle.classList.remove('active');
     pinToggle.textContent = '⤒';
-    pinToggle.title = 'Pin header (always visible)';
-    // Show pull tab when unpinned
-    pullTab.classList.remove('hidden');
-    // Keep header in its current state (don't force it open)
+    pinToggle.title = 'Pin header';
     if (!isHeaderVisible) {
-      header.classList.add('hidden');
+      wrapper.classList.add('hidden');
+      wrapper.style.height = '0px';
+    } else {
+      wrapper.classList.remove('hidden');
+      wrapper.style.height = 'auto';
     }
   }
   localStorage.setItem('headerPinned', isPinned);
@@ -857,19 +867,14 @@ function togglePin() {
 // Scroll handling - only hides, never reveals
 function handleScroll() {
   if (isPinned) return;
-  if (isUserInteracting) return;
   
   const currentScrollY = window.scrollY;
-  const header = document.getElementById('main-header');
   
-  // Only hide on scroll down, never reveal on scroll up
   if (currentScrollY > lastScrollY && currentScrollY > 50) {
-    // Scrolling down - hide header if it's visible
     if (isHeaderVisible) {
       setHeaderVisibility(false);
     }
   }
-  // Scrolling up - do nothing (header stays hidden)
   
   lastScrollY = currentScrollY;
 }
@@ -890,12 +895,11 @@ async function loadCards(){
   const screenWidth = window.innerWidth;
   if (screenWidth < 600) {
     defaultSize = 95;
-  } 
+  }
   
   const savedSize = localStorage.getItem('cardSize');
   let sizeToUse = savedSize ? parseInt(savedSize) : defaultSize;
   
-  // Apply the size
   document.getElementById('card-size-slider').value = sizeToUse;
   document.documentElement.style.setProperty('--card-min-size', sizeToUse + 'px');
   document.getElementById('slider-value').textContent = sizeToUse;
@@ -903,21 +907,22 @@ async function loadCards(){
   const savedPin = localStorage.getItem('headerPinned');
   if (savedPin === 'true') {
     isPinned = true;
-    const header = document.getElementById('main-header');
-    const pinToggle = document.getElementById('pin-toggle');
+    const wrapper = document.getElementById('header-wrapper');
     const pullTab = document.getElementById('pull-tab');
-    header.classList.add('pinned');
-    header.classList.remove('hidden');
+    const pinToggle = document.getElementById('pin-toggle');
+    wrapper.classList.add('pinned');
+    wrapper.classList.remove('hidden');
+    wrapper.style.height = 'auto';
+    pullTab.classList.add('pinned');
     pinToggle.classList.add('active');
     pinToggle.textContent = '⤓';
-    pinToggle.title = 'Unpin header (auto-hide on scroll)';
-    pullTab.classList.add('hidden');
+    pinToggle.title = 'Unpin header';
     isHeaderVisible = true;
   } else {
-    // Default: header open, pull tab visible
     isHeaderVisible = true;
-    document.getElementById('main-header').classList.remove('hidden');
-    document.getElementById('pull-tab').classList.remove('hidden');
+    document.getElementById('header-wrapper').classList.remove('hidden');
+    document.getElementById('header-wrapper').style.height = 'auto';
+    document.getElementById('pull-tab').classList.remove('pinned');
   }
   
   try{
@@ -975,10 +980,8 @@ document.getElementById('card-size-slider').addEventListener('input', (e) => {
   updateCardSize(e.target.value);
 });
 
-// Pull tab toggle
 document.getElementById('pull-tab').addEventListener('click', toggleHeaderVisibility);
 
-// Pin toggle event listeners
 const pinToggle = document.getElementById('pin-toggle');
 pinToggle.addEventListener('click', togglePin);
 pinToggle.addEventListener('keydown', (e) => {
