@@ -12,6 +12,7 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+main{padding:16px 20px;min-height:100vh;}
 
 /* --- PULL TAB --- */
 #pull-tab {
@@ -65,19 +66,22 @@ header{
   background:rgba(16,17,20,.97);
   border-bottom:1px solid var(--border);
   padding:12px 20px;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease, margin-bottom 0.3s ease;
   transform: translateY(0);
   opacity:1;
+  margin-bottom:0;
 }
 header.hidden {
   transform: translateY(-100%);
   opacity:0;
   pointer-events:none;
+  margin-bottom:-100px;
 }
 header.pinned {
   transform: translateY(0) !important;
   opacity:1 !important;
   pointer-events:auto !important;
+  margin-bottom:0 !important;
 }
 
 .header-top{
@@ -213,8 +217,6 @@ h1{margin:0;font-size:22px;font-weight:700}
   color:var(--muted);
   font-size:12px;
 }
-
-main{padding:16px 20px}
 
 .grid{
   display:grid;
@@ -433,7 +435,7 @@ main{padding:16px 20px}
     <div class="control-wrapper">
       <span class="control-label">Card Size</span>
       <input type="range" id="card-size-slider" min="70" max="250" value="120" step="5">
-      <div class="slider-value" id="slider-value">120px</div>
+      <div class="slider-value" id="slider-value">120</div>
     </div>
 
     <!-- Pin Toggle -->
@@ -462,6 +464,7 @@ let isRendering = false;
 let isPinned = false;
 let isHeaderVisible = true;
 let lastScrollY = 0;
+let isUserInteracting = false;
 
 function esc(value){
   return String(value ?? "").replace(/[&<>"']/g, c => ({
@@ -791,7 +794,7 @@ function render() {
 function updateCardSize(value) {
   const size = parseInt(value);
   document.documentElement.style.setProperty('--card-min-size', size + 'px');
-  document.getElementById('slider-value').textContent = size + 'px';
+  document.getElementById('slider-value').textContent = size;
   localStorage.setItem('cardSize', size);
 }
 
@@ -854,6 +857,7 @@ function togglePin() {
 // Scroll handling - only hides, never reveals
 function handleScroll() {
   if (isPinned) return;
+  if (isUserInteracting) return;
   
   const currentScrollY = window.scrollY;
   const header = document.getElementById('main-header');
@@ -894,7 +898,7 @@ async function loadCards(){
   // Apply the size
   document.getElementById('card-size-slider').value = sizeToUse;
   document.documentElement.style.setProperty('--card-min-size', sizeToUse + 'px');
-  document.getElementById('slider-value').textContent = sizeToUse + 'px';
+  document.getElementById('slider-value').textContent = sizeToUse;
   
   const savedPin = localStorage.getItem('headerPinned');
   if (savedPin === 'true') {
