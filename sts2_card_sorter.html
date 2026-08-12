@@ -784,13 +784,11 @@ window.addEventListener('scroll', () => {
 
 async function loadCards(){
   // Determine default card size based on screen width
-  let defaultSize = 160;
+  let defaultSize = 165;
   const screenWidth = window.innerWidth;
   if (screenWidth < 600) {
     defaultSize = 90;
-  } else if (screenWidth < 1024) {
-    defaultSize = 120;
-  }
+  } 
   
   const savedSize = localStorage.getItem('cardSize');
   let sizeToUse = savedSize ? parseInt(savedSize) : defaultSize;
