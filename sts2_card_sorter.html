@@ -468,6 +468,46 @@ let isPinned = false;
 let isHeaderVisible = true;
 let lastScrollY = 0;
 
+// Character toggle state - saved to localStorage
+const COLOR_STORAGE_KEY = 'sts2_active_colors';
+
+function saveColorStates() {
+  const activeColors = [];
+  document.querySelectorAll('.color-toggle.active').forEach(btn => {
+    activeColors.push(btn.dataset.color);
+  });
+  localStorage.setItem(COLOR_STORAGE_KEY, JSON.stringify(activeColors));
+}
+
+function loadColorStates() {
+  const saved = localStorage.getItem(COLOR_STORAGE_KEY);
+  if (!saved) return null;
+  try {
+    return JSON.parse(saved);
+  } catch {
+    return null;
+  }
+}
+
+function applyColorStates(activeColors) {
+  if (!activeColors || !Array.isArray(activeColors) || activeColors.length === 0) {
+    // If no saved state, default to all active
+    document.querySelectorAll('.color-toggle').forEach(btn => {
+      btn.classList.add('active');
+    });
+    return;
+  }
+  
+  document.querySelectorAll('.color-toggle').forEach(btn => {
+    const color = btn.dataset.color;
+    if (activeColors.includes(color)) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
 function esc(value){
   return String(value ?? "").replace(/[&<>"']/g, c => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -885,6 +925,10 @@ window.addEventListener('scroll', () => {
 });
 
 async function loadCards(){
+  // Load saved character toggle states
+  const savedColors = loadColorStates();
+  applyColorStates(savedColors);
+  
   // Determine default card size based on screen width
   let defaultSize = 165;
   const screenWidth = window.innerWidth;
@@ -974,6 +1018,7 @@ async function loadCards(){
 document.querySelectorAll(".color-toggle").forEach(button => {
   button.addEventListener("click", () => {
     button.classList.toggle("active");
+    saveColorStates(); // Save to localStorage
     render();
   });
 });
@@ -985,6 +1030,7 @@ document.getElementById("reset").addEventListener("click", () => {
   document.querySelectorAll(".color-toggle").forEach(button => {
     button.classList.add("active");
   });
+  saveColorStates(); // Save the reset state
   document.getElementById("sort").value = "rarity-asc";
   document.getElementById("search").value = "";
   cardStates = {};
