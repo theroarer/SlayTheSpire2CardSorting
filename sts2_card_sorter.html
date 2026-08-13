@@ -129,7 +129,6 @@ h1{margin:0;font-size:22px;font-weight:700}
 
 .card-name{ font-size:11px; font-weight:800; margin:4px 1px 1px; line-height:1.2; }
 .card-meta{ color:var(--muted); font-size:8px; line-height:1.2; }
-.card-desc{ font-size:9px; color:var(--text); padding:2px 1px; line-height:1.3; white-space:pre-wrap; word-wrap:break-word; }
 .card-actions{ display:flex; gap:3px; margin-top:3px; flex-wrap:wrap; }
 .card-actions button{
   padding:2px 6px; font-size:8px; border-radius:3px; background:var(--panel2);
@@ -293,19 +292,19 @@ const madScienceImages = {
 
 const madScienceVariants = [
   // Attacks
-  { id: "MAD_SCIENCE_ATK_1", name: "Mad Science", type: "Attack", color: "event", cost: 1, rarity: "Event", baked: true, description: "Deal 12 damage.\nApply 2 Weak.\nApply 2 Vulnerable.", description_upg: "Innate.\nDeal 12 damage.\nApply 2 Weak.\nApply 2 Vulnerable.", image_url_card: madScienceImages.Sapping, image_url_card_upg: madScienceImages.Sapping },
-  { id: "MAD_SCIENCE_ATK_2", name: "Mad Science", type: "Attack", color: "event", cost: 1, rarity: "Event", baked: true, description: "Deal 12 damage 3 times.", description_upg: "Innate.\nDeal 12 damage 3 times.", image_url_card: madScienceImages.Violence, image_url_card_upg: madScienceImages.Violence },
-  { id: "MAD_SCIENCE_ATK_3", name: "Mad Science", type: "Attack", color: "event", cost: 1, rarity: "Event", baked: true, description: "Deal 12 damage.\nWhenever you play a card this turn, the enemy loses 6 HP.", description_upg: "Innate.\nDeal 12 damage.\nWhenever you play a card this turn, the enemy loses 6 HP.", image_url_card: madScienceImages.Choking, image_url_card_upg: madScienceImages.Choking },
+  { id: "MAD_SCIENCE_ATK_1", name: "Mad Science", type: "Attack", color: "event", cost: 1, rarity: "Event", description: "Deal 12 damage.\nApply 2 Weak.\nApply 2 Vulnerable.", description_upg: "Innate.\nDeal 12 damage.\nApply 2 Weak.\nApply 2 Vulnerable.", image_url_card: madScienceImages.Sapping, image_url_card_upg: madScienceImages.Sapping },
+  { id: "MAD_SCIENCE_ATK_2", name: "Mad Science", type: "Attack", color: "event", cost: 1, rarity: "Event", description: "Deal 12 damage 3 times.", description_upg: "Innate.\nDeal 12 damage 3 times.", image_url_card: madScienceImages.Violence, image_url_card_upg: madScienceImages.Violence },
+  { id: "MAD_SCIENCE_ATK_3", name: "Mad Science", type: "Attack", color: "event", cost: 1, rarity: "Event", description: "Deal 12 damage.\nWhenever you play a card this turn, the enemy loses 6 HP.", description_upg: "Innate.\nDeal 12 damage.\nWhenever you play a card this turn, the enemy loses 6 HP.", image_url_card: madScienceImages.Choking, image_url_card_upg: madScienceImages.Choking },
   
   // Skills
-  { id: "MAD_SCIENCE_SKL_1", name: "Mad Science", type: "Skill", color: "event", cost: 1, rarity: "Event", baked: true, description: "Gain 8 Block.\nGain 1 Colorless Energy.", description_upg: "Innate.\nGain 8 Block.\nGain 1 Colorless Energy.", image_url_card: madScienceImages.Energized, image_url_card_upg: madScienceImages.Energized },
-  { id: "MAD_SCIENCE_SKL_2", name: "Mad Science", type: "Skill", color: "event", cost: 1, rarity: "Event", baked: true, description: "Gain 8 Block.\nDraw 3 cards.", description_upg: "Innate.\nGain 8 Block.\nDraw 3 cards.", image_url_card: madScienceImages.Wisdom, image_url_card_upg: madScienceImages.Wisdom },
-  { id: "MAD_SCIENCE_SKL_3", name: "Mad Science", type: "Skill", color: "event", cost: 1, rarity: "Event", baked: true, description: "Gain 8 Block.\nAdd a random card into your Hand. It's free to play this turn.", description_upg: "Innate.\nGain 8 Block.\nAdd a random card into your Hand. It's free to play this turn.", image_url_card: madScienceImages.Chaos, image_url_card_upg: madScienceImages.Chaos },
+  { id: "MAD_SCIENCE_SKL_1", name: "Mad Science", type: "Skill", color: "event", cost: 1, rarity: "Event", description: "Gain 8 Block.\nGain 1 Colorless Energy.", description_upg: "Innate.\nGain 8 Block.\nGain 1 Colorless Energy.", image_url_card: madScienceImages.Energized, image_url_card_upg: madScienceImages.Energized },
+  { id: "MAD_SCIENCE_SKL_2", name: "Mad Science", type: "Skill", color: "event", cost: 1, rarity: "Event", description: "Gain 8 Block.\nDraw 3 cards.", description_upg: "Innate.\nGain 8 Block.\nDraw 3 cards.", image_url_card: madScienceImages.Wisdom, image_url_card_upg: madScienceImages.Wisdom },
+  { id: "MAD_SCIENCE_SKL_3", name: "Mad Science", type: "Skill", color: "event", cost: 1, rarity: "Event", description: "Gain 8 Block.\nAdd a random card into your Hand. It's free to play this turn.", description_upg: "Innate.\nGain 8 Block.\nAdd a random card into your Hand. It's free to play this turn.", image_url_card: madScienceImages.Chaos, image_url_card_upg: madScienceImages.Chaos },
   
   // Powers
-  { id: "MAD_SCIENCE_PWR_1", name: "Mad Science", type: "Power", color: "event", cost: 1, rarity: "Event", baked: true, description: "Gain 2 Strength.\nGain 2 Dexterity.", description_upg: "Innate.\nGain 2 Strength.\nGain 2 Dexterity.", image_url_card: madScienceImages.Expertise, image_url_card_upg: madScienceImages.Expertise },
-  { id: "MAD_SCIENCE_PWR_2", name: "Mad Science", type: "Power", color: "event", cost: 1, rarity: "Event", baked: true, description: "Powers cost 1 Colorless Energy less.", description_upg: "Innate.\nPowers cost 1 Colorless Energy less.", image_url_card: madScienceImages.Curious, image_url_card_upg: madScienceImages.Curious },
-  { id: "MAD_SCIENCE_PWR_3", name: "Mad Science", type: "Power", color: "event", cost: 1, rarity: "Event", baked: true, description: "At the end of combat, Upgrade a random card.", description_upg: "Innate.\nAt the end of combat, Upgrade a random card.", image_url_card: madScienceImages.Improvement, image_url_card_upg: madScienceImages.Improvement }
+  { id: "MAD_SCIENCE_PWR_1", name: "Mad Science", type: "Power", color: "event", cost: 1, rarity: "Event", description: "Gain 2 Strength.\nGain 2 Dexterity.", description_upg: "Innate.\nGain 2 Strength.\nGain 2 Dexterity.", image_url_card: madScienceImages.Expertise, image_url_card_upg: madScienceImages.Expertise },
+  { id: "MAD_SCIENCE_PWR_2", name: "Mad Science", type: "Power", color: "event", cost: 1, rarity: "Event", description: "Powers cost 1 Colorless Energy less.", description_upg: "Innate.\nPowers cost 1 Colorless Energy less.", image_url_card: madScienceImages.Curious, image_url_card_upg: madScienceImages.Curious },
+  { id: "MAD_SCIENCE_PWR_3", name: "Mad Science", type: "Power", color: "event", cost: 1, rarity: "Event", description: "At the end of combat, Upgrade a random card.", description_upg: "Innate.\nAt the end of combat, Upgrade a random card.", image_url_card: madScienceImages.Improvement, image_url_card_upg: madScienceImages.Improvement }
 ];
 
 // --- LOCAL STORAGE HELPERS ---
@@ -608,15 +607,6 @@ function createCardElement(card) {
   meta.className = 'card-meta';
   meta.textContent = `${card.color} · ${card.rarity} · ${card.type} · Cost ${card.cost}`;
   li.appendChild(meta);
-
-  // Description (only show if text is NOT baked into the image)
-  if (card.description && !card.baked) {
-    const desc = document.createElement('div');
-    desc.className = 'card-desc';
-    const descText = state.upgraded && card.description_upg ? card.description_upg : card.description;
-    desc.textContent = descText;
-    li.appendChild(desc);
-  }
   
   const actions = document.createElement('div');
   actions.className = 'card-actions';
