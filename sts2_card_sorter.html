@@ -133,22 +133,28 @@ h1{margin:0;font-size:22px;font-weight:700}
   height:12px; /* Fixed height for top row alignment */
 }
 
+/* Strict uniform height for elements that DO NOT wrap */
 .control-wrapper select,
 .control-wrapper input[type="search"],
 .control-wrapper input[type="range"],
 .control-wrapper button#reset,
-.control-wrapper button#pin-toggle,
-.control-wrapper .toggles {
-  height: 32px; /* Strict uniform height for bottom row alignment */
+.control-wrapper button#pin-toggle {
+  height: 32px; 
   box-sizing: border-box;
-  margin: 0; /* CRITICAL: Remove default browser margins */
+  margin: 0;
 }
+
+/* Flexible min-height for elements that DO wrap (Mobile Fix) */
 .control-wrapper .toggles {
-  display:flex;
-  flex-wrap:wrap;
-  gap:4px;
+  min-height: 32px; /* Allows container to grow when buttons wrap */
+  box-sizing: border-box;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   align-items: center;
 }
+
 .control-wrapper select,
 .control-wrapper input[type="search"]{
   background:var(--panel2);
@@ -175,25 +181,34 @@ h1{margin:0;font-size:22px;font-weight:700}
 .control-wrapper button#reset:hover{
   background:#30343b;
 }
-.control-wrapper .color-toggle{
+
+/* Shared styling for both Color and Type toggles */
+.control-wrapper .color-toggle,
+.control-wrapper .type-toggle {
   padding:4px 8px;
   font-size:10px;
   white-space:nowrap;
   width:auto;
-  height: 100%;
+  height: 28px; /* Explicit height for the buttons themselves */
+  box-sizing: border-box;
   background:var(--panel2);
   color:var(--text);
   border:1px solid var(--border);
   border-radius:6px;
   cursor:pointer;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-.control-wrapper .color-toggle.active{
+.control-wrapper .color-toggle.active,
+.control-wrapper .type-toggle.active {
   background:#555b65;
   border-color:#858b95;
   color:#fff;
 }
-.control-wrapper .color-toggle:not(.active){
+.control-wrapper .color-toggle:not(.active),
+.control-wrapper .type-toggle:not(.active) {
   opacity:.38;
   text-decoration:line-through;
 }
@@ -206,12 +221,11 @@ h1{margin:0;font-size:22px;font-weight:700}
   border:none;
   accent-color:#858b95;
   cursor:pointer;
-  -webkit-appearance: none; /* Remove native styling */
+  -webkit-appearance: none;
   appearance: none;
-  display: flex; /* Force flex to center track */
+  display: flex;
   align-items: center;
 }
-/* Manually style the track to ensure it centers perfectly */
 .control-wrapper input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   background: var(--panel2);
@@ -222,7 +236,6 @@ h1{margin:0;font-size:22px;font-weight:700}
   background: var(--panel2);
   border-radius: 2px;
 }
-/* Manually style the thumb */
 .control-wrapper input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -230,7 +243,7 @@ h1{margin:0;font-size:22px;font-weight:700}
   height: 14px;
   border-radius: 50%;
   background: #858b95;
-  margin-top: -5px; /* Align thumb to track */
+  margin-top: -5px;
   cursor: pointer;
 }
 .control-wrapper input[type="range"]::-moz-range-thumb {
@@ -483,6 +496,22 @@ h1{margin:0;font-size:22px;font-weight:700}
           <button class="color-toggle active" data-color="necrobinder">Necrobinder</button>
           <button class="color-toggle active" data-color="regent">Regent</button>
           <button class="color-toggle active" data-color="colorless">Colorless</button>
+          <button class="color-toggle active" data-color="misc">Misc</button>
+        </div>
+      </div>
+
+      <!-- Types -->
+      <div class="control-wrapper">
+        <span class="control-label" id="type-label">Types</span>
+        <div id="type-toggles" class="toggles" role="group" aria-labelledby="type-label">
+          <button class="type-toggle active" data-type="attack">Attack</button>
+          <button class="type-toggle active" data-type="skill">Skill</button>
+          <button class="type-toggle active" data-type="power">Power</button>
+          <button class="type-toggle active" data-type="quest">Quest</button>
+          <button class="type-toggle active" data-type="status">Status</button>
+          <button class="type-toggle active" data-type="curse">Curse</button>
+          <button class="type-toggle active" data-type="event">Event</button>
+          <button class="type-toggle active" data-type="token">Token</button>
         </div>
       </div>
 
@@ -535,6 +564,9 @@ const API = "https://spire-codex.com/api/cards?lang=eng";
 const ENCHANTMENTS_API = "https://spire-codex.com/api/enchantments?lang=eng";
 const rarityRank = {Basic:0, Starter:0, Common:1, Uncommon:2, Rare:3};
 
+// Define standard colors so we can separate them from Misc (Quest, Status, Curse, Event, Token)
+const STANDARD_COLORS = ['ironclad', 'silent', 'defect', 'necrobinder', 'regent', 'colorless'];
+
 let cards = [];
 let enchantments = [];
 let cardStates = {};
@@ -544,21 +576,22 @@ let isRendering = false;
 let isPinned = false;
 let isHeaderVisible = true;
 let lastScrollY = 0;
-let lastFocusedElement = null; // For lightbox focus return
+let lastFocusedElement = null;
 
-// Character toggle state - saved to localStorage
 const COLOR_STORAGE_KEY = 'sts2_active_colors';
+const TYPE_STORAGE_KEY = 'sts2_active_types'; // Reset back to original key
 
-function saveColorStates() {
-  const activeColors = [];
-  document.querySelectorAll('.color-toggle.active').forEach(btn => {
-    activeColors.push(btn.dataset.color);
+// --- LOCAL STORAGE HELPERS ---
+function saveToggleStates(storageKey, selector) {
+  const activeItems = [];
+  document.querySelectorAll(selector).forEach(btn => {
+    activeItems.push(btn.dataset.color || btn.dataset.type);
   });
-  localStorage.setItem(COLOR_STORAGE_KEY, JSON.stringify(activeColors));
+  localStorage.setItem(storageKey, JSON.stringify(activeItems));
 }
 
-function loadColorStates() {
-  const saved = localStorage.getItem(COLOR_STORAGE_KEY);
+function loadToggleStates(storageKey) {
+  const saved = localStorage.getItem(storageKey);
   if (!saved) return null;
   try {
     return JSON.parse(saved);
@@ -567,13 +600,13 @@ function loadColorStates() {
   }
 }
 
-function applyColorStates(activeColors) {
-  if (!activeColors || !Array.isArray(activeColors) || activeColors.length === 0) {
-    document.querySelectorAll('.color-toggle').forEach(btn => btn.classList.add('active'));
+function applyToggleStates(activeItems, selector, dataAttr) {
+  if (!activeItems || !Array.isArray(activeItems) || activeItems.length === 0) {
+    document.querySelectorAll(selector).forEach(btn => btn.classList.add('active'));
     return;
   }
-  document.querySelectorAll('.color-toggle').forEach(btn => {
-    if (activeColors.includes(btn.dataset.color)) {
+  document.querySelectorAll(selector).forEach(btn => {
+    if (activeItems.includes(btn.dataset[dataAttr])) {
       btn.classList.add('active');
     } else {
       btn.classList.remove('active');
@@ -610,7 +643,7 @@ function openLightbox(imageUrl, cardName){
   const existing = document.querySelector('.lightbox');
   if(existing) existing.remove();
   
-  lastFocusedElement = document.activeElement; // Store focus
+  lastFocusedElement = document.activeElement;
   
   const lightbox = document.createElement('div');
   lightbox.className = 'lightbox';
@@ -632,11 +665,11 @@ function openLightbox(imageUrl, cardName){
   lightbox.appendChild(img);
   document.body.appendChild(lightbox);
   
-  closeBtn.focus(); // Move focus to close button
+  closeBtn.focus();
   
   const closeLightbox = () => {
     lightbox.remove();
-    if (lastFocusedElement) lastFocusedElement.focus(); // Return focus
+    if (lastFocusedElement) lastFocusedElement.focus();
   };
   
   lightbox.addEventListener('click', (e) => {
@@ -738,8 +771,7 @@ function getCardImage(card, state){
   }
 }
 
-// --- ROBUST DEEP SEARCH ---
-// Recursively flattens all strings inside the card object into one searchable string
+// Recursive Deep Search: Vacuums up ALL strings inside the card object
 function getCardSearchString(card) {
   let text = '';
   const extract = (obj) => {
@@ -767,14 +799,56 @@ function getFilteredCards() {
     [...document.querySelectorAll(".color-toggle.active")]
       .map(button => button.dataset.color)
   );
+  const activeTypes = new Set(
+    [...document.querySelectorAll(".type-toggle.active")]
+      .map(button => button.dataset.type)
+  );
+  
   return cards.filter(card => {
+    const cardType = String(card.type ?? "").toLowerCase();
+    const cardColor = String(card.color ?? "").toLowerCase();
+    
+    // 1. Type Filter (Event/Token Priority Hard Block)
+    if (activeTypes.size > 0) {
+      // Priority check for Event/Token (Stored as color in API)
+      if (cardColor === 'token' && !activeTypes.has('token')) return false;
+      if (cardColor === 'event' && !activeTypes.has('event')) return false;
+      
+      // Standard types check (Attack, Skill, etc.)
+      let typeMatch = false;
+      for (const activeType of activeTypes) {
+        if (activeType === 'event' || activeType === 'token') {
+          if (cardColor === activeType) {
+            typeMatch = true;
+            break;
+          }
+        } else {
+          if (cardType === activeType) {
+            typeMatch = true;
+            break;
+          }
+        }
+      }
+      if (!typeMatch) return false;
+    }
+    
+    // 2. Color/Misc Filter
     if(activeColors.size === 0) return false;
-    if(!activeColors.has(String(card.color).toLowerCase())) return false;
+    
+    const isStandardColor = STANDARD_COLORS.includes(cardColor);
+    
+    if (isStandardColor) {
+      if (!activeColors.has(cardColor)) return false;
+    } else {
+      if (!activeColors.has('misc')) return false;
+    }
+    
+    // 3. Search Filter
     if(search){
-      // Use the deep search string instead of hardcoded fields
       const haystack = getCardSearchString(card);
       if(!haystack.includes(search)) return false;
     }
+    
     return true;
   });
 }
@@ -983,13 +1057,11 @@ function setHeaderVisibility(visible) {
   }
 }
 
-// Toggle header visibility via FAB
 function toggleHeaderVisibility() {
   if (isPinned) return;
   setHeaderVisibility(!isHeaderVisible);
 }
 
-// Toggle pin
 function togglePin() {
   const wrapper = document.getElementById('header-wrapper');
   const pinToggle = document.getElementById('pin-toggle');
@@ -1025,7 +1097,6 @@ function togglePin() {
   localStorage.setItem('headerPinned', isPinned);
 }
 
-// Scroll handling - only hides, never reveals
 function handleScroll() {
   if (isPinned) return;
   
@@ -1050,7 +1121,6 @@ window.addEventListener('scroll', () => {
   }
 });
 
-// Handle resize to update padding
 window.addEventListener('resize', () => {
   if (isPinned || isHeaderVisible) {
     requestAnimationFrame(updateMainPadding);
@@ -1058,8 +1128,12 @@ window.addEventListener('resize', () => {
 });
 
 async function loadCards(){
-  const savedColors = loadColorStates();
-  applyColorStates(savedColors);
+  // Load saved toggle states
+  const savedColors = loadToggleStates(COLOR_STORAGE_KEY);
+  applyToggleStates(savedColors, '.color-toggle', 'color');
+  
+  const savedTypes = loadToggleStates(TYPE_STORAGE_KEY);
+  applyToggleStates(savedTypes, '.type-toggle', 'type');
   
   let defaultSize = 165;
   const screenWidth = window.innerWidth;
@@ -1099,7 +1173,6 @@ async function loadCards(){
     requestAnimationFrame(updateMainPadding);
   }
   
-  // Force header open after Firefox session restore
   window.addEventListener('pageshow', function() {
     setTimeout(function() {
       if (!isPinned) {
@@ -1148,11 +1221,20 @@ async function loadCards(){
 
 // --- EVENT LISTENERS ---
 
-// Character toggles
+// Color Toggles
 document.querySelectorAll(".color-toggle").forEach(button => {
   button.addEventListener("click", () => {
     button.classList.toggle("active");
-    saveColorStates();
+    saveToggleStates(COLOR_STORAGE_KEY, '.color-toggle.active');
+    render();
+  });
+});
+
+// Type Toggles
+document.querySelectorAll(".type-toggle").forEach(button => {
+  button.addEventListener("click", () => {
+    button.classList.toggle("active");
+    saveToggleStates(TYPE_STORAGE_KEY, '.type-toggle.active');
     render();
   });
 });
@@ -1165,15 +1247,16 @@ document.getElementById("search").addEventListener("input", () => {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     render();
-  }, 200); // 200ms debounce
+  }, 200);
 });
 
 // Reset button
 document.getElementById("reset").addEventListener("click", () => {
-  document.querySelectorAll(".color-toggle").forEach(button => {
+  document.querySelectorAll(".color-toggle, .type-toggle").forEach(button => {
     button.classList.add("active");
   });
-  saveColorStates();
+  saveToggleStates(COLOR_STORAGE_KEY, '.color-toggle.active');
+  saveToggleStates(TYPE_STORAGE_KEY, '.type-toggle.active');
   document.getElementById("sort").value = "rarity-asc";
   document.getElementById("search").value = "";
   cardStates = {};
@@ -1186,13 +1269,11 @@ document.getElementById('card-size-slider').addEventListener('input', (e) => {
   updateCardSize(e.target.value);
 });
 
-// FAB (Native button, just needs click)
+// FAB and Pin Toggle
 document.getElementById('fab').addEventListener('click', toggleHeaderVisibility);
-
-// Pin Toggle (Native button, just needs click)
 document.getElementById('pin-toggle').addEventListener('click', togglePin);
 
-// EVENT DELEGATION for Card Grid
+// Event Delegation for Card Grid
 const grid = document.getElementById('grid');
 grid.addEventListener('click', (e) => {
   const cardEl = e.target.closest('.card');
@@ -1200,7 +1281,6 @@ grid.addEventListener('click', (e) => {
   
   const cardId = cardEl.dataset.cardId;
   
-  // Handle Image Click (Lightbox)
   if (e.target.classList.contains('card-image')) {
     const imageUrl = e.target.src;
     const cardName = e.target.alt;
@@ -1208,7 +1288,6 @@ grid.addEventListener('click', (e) => {
     return;
   }
   
-  // Handle Button Clicks
   const button = e.target.closest('button');
   if (!button) return;
   
