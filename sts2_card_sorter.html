@@ -3,16 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="A sorter and browser for STS2 cards.">
 <title>STS2 Card Sorter</title>
 <style>
 :root{
   --bg:#101114;--panel:#191b20;--panel2:#22252b;--border:#383c45;
   --text:#f4f4f5;--muted:#a9adb6;
   --card-min-size: 165px;
+  --header-height: 0px; /* Dynamic padding for main */
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
-main{padding:16px 20px;min-height:100vh;}
+main{
+  padding:16px 20px;
+  padding-top: calc(var(--header-height) + 16px);
+  min-height:100vh;
+  transition: padding-top 0.3s ease;
+}
 
 /* --- FLOATING ACTION BUTTON --- */
 #fab {
@@ -104,7 +111,7 @@ h1{margin:0;font-size:22px;font-weight:700}
   flex-wrap:wrap;
   gap:8px;
   margin-top:10px;
-  align-items:end;
+  align-items:flex-end; /* Aligns bottoms */
 }
 
 /* --- UNIFIED CONTROL WRAPPER --- */
@@ -115,8 +122,7 @@ h1{margin:0;font-size:22px;font-weight:700}
   justify-content:flex-end;
   min-width:0;
 }
-.control-wrapper .control-label,
-.control-wrapper .label-placeholder{
+.control-wrapper .control-label{
   font-size:10px;
   font-weight:800;
   text-transform:uppercase;
@@ -124,31 +130,49 @@ h1{margin:0;font-size:22px;font-weight:700}
   display:block;
   line-height:1;
   margin:0;
-  padding:0;
-  height:10px;
+  height:12px; /* Fixed height for top row alignment */
 }
-.control-wrapper .label-placeholder{
-  visibility:hidden;
+
+.control-wrapper select,
+.control-wrapper input[type="search"],
+.control-wrapper input[type="range"],
+.control-wrapper button#reset,
+.control-wrapper button#pin-toggle,
+.control-wrapper .toggles {
+  height: 32px; /* Strict uniform height for bottom row alignment */
+  box-sizing: border-box;
+  margin: 0; /* CRITICAL: Remove default browser margins */
+}
+.control-wrapper .toggles {
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  align-items: center;
 }
 .control-wrapper select,
-.control-wrapper input,
-.control-wrapper button{
+.control-wrapper input[type="search"]{
   background:var(--panel2);
   color:var(--text);
   border:1px solid var(--border);
   border-radius:6px;
-  padding:6px 10px;
+  padding:0 10px;
   font:inherit;
   font-size:12px;
   width:100%;
   min-width:0;
 }
-.control-wrapper button{
+.control-wrapper button#reset {
+  background:var(--panel2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:6px;
+  font:inherit;
+  font-size:12px;
   cursor:pointer;
-  padding:6px 14px;
+  padding:0 14px;
   white-space:nowrap;
 }
-.control-wrapper button:hover{
+.control-wrapper button#reset:hover{
   background:#30343b;
 }
 .control-wrapper .color-toggle{
@@ -156,6 +180,13 @@ h1{margin:0;font-size:22px;font-weight:700}
   font-size:10px;
   white-space:nowrap;
   width:auto;
+  height: 100%;
+  background:var(--panel2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:6px;
+  cursor:pointer;
+  transition: all 0.2s ease;
 }
 .control-wrapper .color-toggle.active{
   background:#555b65;
@@ -166,11 +197,8 @@ h1{margin:0;font-size:22px;font-weight:700}
   opacity:.38;
   text-decoration:line-through;
 }
-.control-wrapper .toggles{
-  display:flex;
-  flex-wrap:wrap;
-  gap:4px;
-}
+
+/* RANGE SLIDER ALIGNMENT FIX */
 .control-wrapper input[type="range"]{
   width:100%;
   padding:0;
@@ -178,12 +206,47 @@ h1{margin:0;font-size:22px;font-weight:700}
   border:none;
   accent-color:#858b95;
   cursor:pointer;
+  -webkit-appearance: none; /* Remove native styling */
+  appearance: none;
+  display: flex; /* Force flex to center track */
+  align-items: center;
 }
+/* Manually style the track to ensure it centers perfectly */
+.control-wrapper input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--panel2);
+  border-radius: 2px;
+}
+.control-wrapper input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: var(--panel2);
+  border-radius: 2px;
+}
+/* Manually style the thumb */
+.control-wrapper input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #858b95;
+  margin-top: -5px; /* Align thumb to track */
+  cursor: pointer;
+}
+.control-wrapper input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: #858b95;
+  cursor: pointer;
+}
+
 /* Pin toggle inside header */
-.control-wrapper.pin-wrapper .pin-toggle{
+.control-wrapper.pin-wrapper button#pin-toggle{
   font-size:16px;
   line-height:1;
-  padding:6px 10px;
+  padding:0 10px;
   width:auto;
   transition: all 0.2s ease;
   color:var(--muted);
@@ -195,19 +258,18 @@ h1{margin:0;font-size:22px;font-weight:700}
   text-align:center;
   user-select:none;
 }
-.control-wrapper.pin-wrapper .pin-toggle:hover{
+.control-wrapper.pin-wrapper button#pin-toggle:hover{
   background:#30343b;
   color:var(--text);
 }
-.control-wrapper.pin-wrapper .pin-toggle.active{
+.control-wrapper.pin-wrapper button#pin-toggle.active{
   background:#2a3a4a;
   border-color:#4a8aaa;
   color:#8adaaa;
 }
-.control-wrapper.pin-wrapper .pin-toggle.active:hover{
+.control-wrapper.pin-wrapper button#pin-toggle.active:hover{
   background:#2a4a5a;
 }
-/* Reset button - consistent width */
 .control-wrapper.reset-wrapper button{
   width:auto;
 }
@@ -224,6 +286,8 @@ h1{margin:0;font-size:22px;font-weight:700}
   gap:12px;
   max-width:1900px;
   margin:0 auto;
+  list-style: none;
+  padding: 0;
 }
 
 .card{
@@ -355,15 +419,18 @@ h1{margin:0;font-size:22px;font-weight:700}
   .controls{gap:5px}
   .controls>*{width:100%}
   .control-wrapper select,
-  .control-wrapper input,
-  .control-wrapper button{
+  .control-wrapper input[type="search"],
+  .control-wrapper input[type="range"],
+  .control-wrapper button#reset,
+  .control-wrapper button#pin-toggle,
+  .control-wrapper .toggles {
     font-size:11px;
   }
-  .control-wrapper.pin-wrapper .pin-toggle{
+  .control-wrapper.pin-wrapper button#pin-toggle{
     width:100%;
     justify-content:center;
   }
-  .control-wrapper.reset-wrapper button{
+  .control-wrapper.reset-wrapper button#reset{
     width:100%;
   }
   main{padding:12px 14px}
@@ -381,12 +448,22 @@ h1{margin:0;font-size:22px;font-weight:700}
     font-size:18px;
   }
 }
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 </style>
 </head>
 <body>
 
 <!-- FLOATING ACTION BUTTON -->
-<div id="fab" title="Toggle controls" role="button" tabindex="0">✕</div>
+<button id="fab" title="Toggle controls" aria-label="Toggle controls">✕</button>
 
 <!-- HEADER WRAPPER -->
 <div id="header-wrapper">
@@ -398,8 +475,8 @@ h1{margin:0;font-size:22px;font-weight:700}
     <div class="controls">
       <!-- Characters -->
       <div class="control-wrapper">
-        <span class="control-label">Characters</span>
-        <div id="color-toggles" class="toggles">
+        <span class="control-label" id="char-label">Characters</span>
+        <div id="color-toggles" class="toggles" role="group" aria-labelledby="char-label">
           <button class="color-toggle active" data-color="ironclad">Ironclad</button>
           <button class="color-toggle active" data-color="silent">Silent</button>
           <button class="color-toggle active" data-color="defect">Defect</button>
@@ -411,7 +488,7 @@ h1{margin:0;font-size:22px;font-weight:700}
 
       <!-- Sort -->
       <div class="control-wrapper">
-        <span class="control-label">Sort</span>
+        <label for="sort" class="control-label">Sort</label>
         <select id="sort">
           <option value="rarity-asc">Rarity ↑</option>
           <option value="rarity-desc">Rarity ↓</option>
@@ -424,34 +501,34 @@ h1{margin:0;font-size:22px;font-weight:700}
 
       <!-- Search -->
       <div class="control-wrapper">
-        <span class="control-label">Search</span>
+        <label for="search" class="control-label">Search</label>
         <input id="search" type="search" placeholder="Card name or text…">
       </div>
 
       <!-- Reset -->
       <div class="control-wrapper reset-wrapper">
-        <span class="label-placeholder">Placeholder</span>
-        <button id="reset">Reset</button>
+        <span class="control-label" aria-hidden="true">&nbsp;</span>
+        <button id="reset" aria-label="Reset all filters">Reset</button>
       </div>
 
       <!-- Card Size -->
       <div class="control-wrapper">
-        <span class="control-label">Card Size</span>
+        <label for="card-size-slider" class="control-label">Card Size</label>
         <input type="range" id="card-size-slider" min="70" max="250" value="165" step="5">
       </div>
 
       <!-- Pin Toggle -->
       <div class="control-wrapper pin-wrapper">
-        <span class="label-placeholder">Placeholder</span>
-        <div role="button" tabindex="0" id="pin-toggle" class="pin-toggle" title="Pin header (always visible)">⤒</div>
+        <span class="control-label" aria-hidden="true">&nbsp;</span>
+        <button id="pin-toggle" class="pin-toggle" title="Pin header (always visible)" aria-label="Pin header">⤒</button>
       </div>
     </div>
 
-    <div id="status">Loading cards…</div>
+    <div id="status" aria-live="polite">Loading cards…</div>
   </header>
 </div>
 
-<main><div id="grid" class="grid"></div></main>
+<main id="main-content"><ul id="grid" class="grid" role="list"></ul></main>
 
 <script>
 const API = "https://spire-codex.com/api/cards?lang=eng";
@@ -467,6 +544,7 @@ let isRendering = false;
 let isPinned = false;
 let isHeaderVisible = true;
 let lastScrollY = 0;
+let lastFocusedElement = null; // For lightbox focus return
 
 // Character toggle state - saved to localStorage
 const COLOR_STORAGE_KEY = 'sts2_active_colors';
@@ -491,21 +569,28 @@ function loadColorStates() {
 
 function applyColorStates(activeColors) {
   if (!activeColors || !Array.isArray(activeColors) || activeColors.length === 0) {
-    // If no saved state, default to all active
-    document.querySelectorAll('.color-toggle').forEach(btn => {
-      btn.classList.add('active');
-    });
+    document.querySelectorAll('.color-toggle').forEach(btn => btn.classList.add('active'));
     return;
   }
-  
   document.querySelectorAll('.color-toggle').forEach(btn => {
-    const color = btn.dataset.color;
-    if (activeColors.includes(color)) {
+    if (activeColors.includes(btn.dataset.color)) {
       btn.classList.add('active');
     } else {
       btn.classList.remove('active');
     }
   });
+}
+
+function updateMainPadding() {
+  const wrapper = document.getElementById('header-wrapper');
+  const isVisible = !wrapper.classList.contains('hidden');
+  
+  if (isVisible) {
+    const headerHeight = wrapper.offsetHeight;
+    document.documentElement.style.setProperty('--header-height', headerHeight + 'px');
+  } else {
+    document.documentElement.style.setProperty('--header-height', '0px');
+  }
 }
 
 function esc(value){
@@ -525,8 +610,13 @@ function openLightbox(imageUrl, cardName){
   const existing = document.querySelector('.lightbox');
   if(existing) existing.remove();
   
+  lastFocusedElement = document.activeElement; // Store focus
+  
   const lightbox = document.createElement('div');
   lightbox.className = 'lightbox';
+  lightbox.setAttribute('role', 'dialog');
+  lightbox.setAttribute('aria-modal', 'true');
+  lightbox.setAttribute('aria-label', cardName);
   
   const closeBtn = document.createElement('button');
   closeBtn.className = 'lightbox-close';
@@ -542,15 +632,22 @@ function openLightbox(imageUrl, cardName){
   lightbox.appendChild(img);
   document.body.appendChild(lightbox);
   
+  closeBtn.focus(); // Move focus to close button
+  
+  const closeLightbox = () => {
+    lightbox.remove();
+    if (lastFocusedElement) lastFocusedElement.focus(); // Return focus
+  };
+  
   lightbox.addEventListener('click', (e) => {
     if(e.target === lightbox || e.target === closeBtn || e.target === img) {
-      lightbox.remove();
+      closeLightbox();
     }
   });
   
   const closeHandler = (e) => {
     if(e.key === 'Escape') {
-      lightbox.remove();
+      closeLightbox();
       document.removeEventListener('keydown', closeHandler);
     }
   };
@@ -641,6 +738,29 @@ function getCardImage(card, state){
   }
 }
 
+// --- ROBUST DEEP SEARCH ---
+// Recursively flattens all strings inside the card object into one searchable string
+function getCardSearchString(card) {
+  let text = '';
+  const extract = (obj) => {
+    if (!obj) return;
+    for (const key in obj) {
+      if (typeof obj[key] === 'string') {
+        text += obj[key] + ' ';
+      } else if (Array.isArray(obj[key])) {
+        obj[key].forEach(item => {
+          if (typeof item === 'string') text += item + ' ';
+          else if (typeof item === 'object') extract(item);
+        });
+      } else if (typeof obj[key] === 'object') {
+        extract(obj[key]);
+      }
+    }
+  };
+  extract(card);
+  return text.toLowerCase();
+}
+
 function getFilteredCards() {
   const search = document.getElementById("search").value.trim().toLowerCase();
   const activeColors = new Set(
@@ -651,9 +771,8 @@ function getFilteredCards() {
     if(activeColors.size === 0) return false;
     if(!activeColors.has(String(card.color).toLowerCase())) return false;
     if(search){
-      const haystack = [
-        card.name, card.description, card.type, card.rarity, card.color, card.id
-      ].join(" ").toLowerCase();
+      // Use the deep search string instead of hardcoded fields
+      const haystack = getCardSearchString(card);
       if(!haystack.includes(search)) return false;
     }
     return true;
@@ -701,9 +820,10 @@ function createCardElement(card) {
   );
   const isImageCached = image ? imageCache.has(image) : false;
   
-  const article = document.createElement('article');
-  article.className = 'card';
-  article.dataset.cardId = card.id;
+  const li = document.createElement('li');
+  li.className = 'card';
+  li.dataset.cardId = card.id;
+  li.setAttribute('role', 'listitem');
   
   const container = document.createElement('div');
   container.className = 'card-image-container';
@@ -713,7 +833,7 @@ function createCardElement(card) {
     img.src = image;
     img.alt = `${card.name}${isUpgraded ? ' (Upgraded)' : ''}${activeEnchantment ? ' enchanted with ' + activeEnchantment : ''}`;
     img.loading = 'lazy';
-    img.onclick = () => openLightbox(image, `${card.name}${isUpgraded ? ' (Upgraded)' : ''}${activeEnchantment ? ' with ' + activeEnchantment : ''}`);
+    img.dataset.action = 'lightbox';
     img.onload = () => {
       img.classList.remove('loading');
       img.classList.add('loaded');
@@ -738,17 +858,17 @@ function createCardElement(card) {
     errorDiv.textContent = 'No image available';
     container.appendChild(errorDiv);
   }
-  article.appendChild(container);
+  li.appendChild(container);
   
   const name = document.createElement('div');
   name.className = 'card-name';
   name.textContent = `${card.name}${isUpgraded ? ' ✦' : ''}${activeEnchantment ? ' ✦✦' : ''}`;
-  article.appendChild(name);
+  li.appendChild(name);
   
   const meta = document.createElement('div');
   meta.className = 'card-meta';
   meta.textContent = `${card.color} · ${card.rarity} · ${card.type} · Cost ${card.cost}`;
-  article.appendChild(meta);
+  li.appendChild(meta);
   
   const actions = document.createElement('div');
   actions.className = 'card-actions';
@@ -756,7 +876,7 @@ function createCardElement(card) {
     const upgradeBtn = document.createElement('button');
     upgradeBtn.className = isUpgraded ? 'active-upgrade' : '';
     upgradeBtn.textContent = isUpgraded ? '▼ Upgraded' : '▲ Upgrade';
-    upgradeBtn.onclick = () => toggleUpgrade(card.id);
+    upgradeBtn.dataset.action = 'upgrade';
     actions.appendChild(upgradeBtn);
   } else {
     const disabledBtn = document.createElement('button');
@@ -768,11 +888,12 @@ function createCardElement(card) {
     const enchBtn = document.createElement('button');
     enchBtn.className = activeEnchantment === ench.id ? 'active-enchant' : '';
     enchBtn.textContent = `${activeEnchantment === ench.id ? '▼' : '✦'} ${ench.name || ench.id}`;
-    enchBtn.onclick = () => toggleEnchantment(card.id, ench.id);
+    enchBtn.dataset.action = 'enchant';
+    enchBtn.dataset.enchantmentId = ench.id; 
     actions.appendChild(enchBtn);
   });
-  article.appendChild(actions);
-  return article;
+  li.appendChild(actions);
+  return li;
 }
 
 function updateCard(cardId) {
@@ -852,11 +973,13 @@ function setHeaderVisibility(visible) {
     wrapper.style.height = 'auto';
     fab.textContent = '✕';
     fab.title = 'Close controls';
+    requestAnimationFrame(updateMainPadding);
   } else {
     wrapper.classList.add('hidden');
     wrapper.style.height = '0px';
     fab.textContent = '☰';
     fab.title = 'Open controls';
+    document.documentElement.style.setProperty('--header-height', '0px');
   }
 }
 
@@ -885,6 +1008,7 @@ function togglePin() {
     fab.textContent = '✕';
     fab.title = 'Close controls (pinned)';
     isHeaderVisible = true;
+    requestAnimationFrame(updateMainPadding);
   } else {
     wrapper.classList.remove('pinned');
     fab.classList.remove('pinned');
@@ -892,9 +1016,11 @@ function togglePin() {
     pinToggle.textContent = '⤒';
     pinToggle.title = 'Pin header';
     
-    // DO NOT auto-close - just re-enable scroll behavior
-    // Keep the header in its current state (open or closed)
-    // The scroll handler will take over from here
+    if (!isHeaderVisible) {
+      document.documentElement.style.setProperty('--header-height', '0px');
+    } else {
+      requestAnimationFrame(updateMainPadding);
+    }
   }
   localStorage.setItem('headerPinned', isPinned);
 }
@@ -924,12 +1050,17 @@ window.addEventListener('scroll', () => {
   }
 });
 
+// Handle resize to update padding
+window.addEventListener('resize', () => {
+  if (isPinned || isHeaderVisible) {
+    requestAnimationFrame(updateMainPadding);
+  }
+});
+
 async function loadCards(){
-  // Load saved character toggle states
   const savedColors = loadColorStates();
   applyColorStates(savedColors);
   
-  // Determine default card size based on screen width
   let defaultSize = 165;
   const screenWidth = window.innerWidth;
   if (screenWidth < 600) {
@@ -958,13 +1089,14 @@ async function loadCards(){
     pinToggle.textContent = '⤓';
     pinToggle.title = 'Unpin header';
     isHeaderVisible = true;
+    requestAnimationFrame(updateMainPadding);
   } else {
-    // Default: header OPEN, FAB shows ✕
     isHeaderVisible = true;
     document.getElementById('header-wrapper').classList.remove('hidden');
     document.getElementById('header-wrapper').style.height = 'auto';
     document.getElementById('fab').textContent = '✕';
     document.getElementById('fab').title = 'Close controls';
+    requestAnimationFrame(updateMainPadding);
   }
   
   // Force header open after Firefox session restore
@@ -979,8 +1111,8 @@ async function loadCards(){
         fab.textContent = '✕';
         fab.title = 'Close controls';
         isHeaderVisible = true;
-        // Reset scroll position tracking to prevent immediate hide
         lastScrollY = window.scrollY;
+        updateMainPadding();
       }
     }, 150);
   });
@@ -1003,34 +1135,45 @@ async function loadCards(){
   }catch(error){
     document.getElementById("status").textContent = "Failed to load cards.";
     document.getElementById("grid").innerHTML = `
-      <div class="error">
+      <li class="error" role="status">
         <strong>Could not load the Spire Codex card database.</strong>
         <p>${esc(error.message)}</p>
         <p>
           If your browser blocks requests from a local HTML file,
           run this file through a simple local web server instead.
         </p>
-      </div>`;
+      </li>`;
   }
 }
 
-// Event listeners
+// --- EVENT LISTENERS ---
+
+// Character toggles
 document.querySelectorAll(".color-toggle").forEach(button => {
   button.addEventListener("click", () => {
     button.classList.toggle("active");
-    saveColorStates(); // Save to localStorage
+    saveColorStates();
     render();
   });
 });
 
 document.getElementById("sort").addEventListener("change", render);
-document.getElementById("search").addEventListener("input", render);
 
+// Debounced Search
+let searchTimeout;
+document.getElementById("search").addEventListener("input", () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    render();
+  }, 200); // 200ms debounce
+});
+
+// Reset button
 document.getElementById("reset").addEventListener("click", () => {
   document.querySelectorAll(".color-toggle").forEach(button => {
     button.classList.add("active");
   });
-  saveColorStates(); // Save the reset state
+  saveColorStates();
   document.getElementById("sort").value = "rarity-asc";
   document.getElementById("search").value = "";
   cardStates = {};
@@ -1038,27 +1181,42 @@ document.getElementById("reset").addEventListener("click", () => {
   render();
 });
 
+// Card Size Slider
 document.getElementById('card-size-slider').addEventListener('input', (e) => {
   updateCardSize(e.target.value);
 });
 
-// FAB event listeners
-const fab = document.getElementById('fab');
-fab.addEventListener('click', toggleHeaderVisibility);
-fab.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    toggleHeaderVisibility();
-  }
-});
+// FAB (Native button, just needs click)
+document.getElementById('fab').addEventListener('click', toggleHeaderVisibility);
 
-// Pin toggle event listeners
-const pinToggle = document.getElementById('pin-toggle');
-pinToggle.addEventListener('click', togglePin);
-pinToggle.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    togglePin();
+// Pin Toggle (Native button, just needs click)
+document.getElementById('pin-toggle').addEventListener('click', togglePin);
+
+// EVENT DELEGATION for Card Grid
+const grid = document.getElementById('grid');
+grid.addEventListener('click', (e) => {
+  const cardEl = e.target.closest('.card');
+  if (!cardEl) return;
+  
+  const cardId = cardEl.dataset.cardId;
+  
+  // Handle Image Click (Lightbox)
+  if (e.target.classList.contains('card-image')) {
+    const imageUrl = e.target.src;
+    const cardName = e.target.alt;
+    openLightbox(imageUrl, cardName);
+    return;
+  }
+  
+  // Handle Button Clicks
+  const button = e.target.closest('button');
+  if (!button) return;
+  
+  if (button.dataset.action === 'upgrade') {
+    toggleUpgrade(cardId);
+  } else if (button.dataset.action === 'enchant') {
+    const enchId = button.dataset.enchantmentId;
+    toggleEnchantment(cardId, enchId);
   }
 });
 
